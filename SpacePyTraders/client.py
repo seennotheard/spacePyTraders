@@ -521,6 +521,7 @@ class Api ():
         self.token = token
         self.agent = Agent(token=token)
         self.contracts = Contracts(token=token)
+        self.faction = Faction(token=token)
         self.extract = Extract(token=token)
         self.markets = Markets(token=token)
         self.navigation = Navigation(token=token)
@@ -608,6 +609,77 @@ class Agent(Client):
                                     raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
 
+    def list_agents(self, limit=10, page=1, raw_res=False, throttle_time=10):
+        """Fetch agents details.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/d4567f6f3c159-list-agents
+
+        Example response:
+        {
+            "data": [
+                {
+                    "accountId": "string",
+                    "symbol": "string",
+                    "headquarters": "string",
+                    "credits": 0,
+                    "startingFaction": "string",
+                    "shipCount": 0
+                }
+            ],
+            "meta": {
+                "total": 0,
+                "page": 1,
+                "limit": 10
+            }
+        }
+
+        Parameters:
+            limit (int, optional): How many entries to return per page. Defaults to 10.
+            page (int, optional): What entry offset to request. Defaults to 1.
+            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"agents"
+        querystring = {"page": page, "limit": limit}
+        warning_log = f"Unable to list agents"
+        res = self.generic_api_call("GET", endpoint, params=querystring, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def get_public_agent(self, agentSymbol, raw_res=False, throttle_time=10):
+        """Fetch agent details.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/82c819018af91-get-public-agent
+
+        Example response:
+        {
+            "data": {
+                "accountId": "string",
+                "symbol": "string",
+                "headquarters": "string",
+                "credits": 0,
+                "startingFaction": "string",
+                "shipCount": 0
+            }
+        }
+
+        Parameters:
+            agentSymbol (str, required): The agent symbol. Defaults to FEBA66.
+            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"agents/" + agentSymbol
+        warning_log = f"Unable to list agent"
+        res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
     def register_new_agent(self, symbol, faction, raw_res=False, throttle_time=10):
         """Registers a new agent in the Space Traders world
 
@@ -633,6 +705,96 @@ class Agent(Client):
         }
         res = self.generic_api_call("POST", endpoint, token="", warning_log=warning_log,
                                     raw_res=raw_res, throttle_time=throttle_time, params=params)
+        return res if res else False
+
+
+class Faction(Client):
+    """Endpoints related to factions.
+
+    Args:
+        Client (Client): Details to login to your agent
+    """
+    def list_factions(self, limit=10, page=1, raw_res=False, throttle_time=10):
+        """View the details of a faction.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/a50decd0f9483-get-faction
+
+        Example response:
+        {
+            "data": [
+                {
+                    "symbol": "COSMIC",
+                    "name": "string",
+                    "description": "string",
+                    "headquarters": "string",
+                    "traits": [
+                        {
+                            "symbol": "BUREAUCRATIC",
+                            "name": "string",
+                            "description": "string"
+                        }
+                    ],
+                  "isRecruiting": true
+                }
+            ],
+            "meta": {
+                "total": 0,
+                "page": 1,
+                "limit": 10
+            }
+        }
+
+        Parameters:
+            limit (int, optional): How many entries to return per page. Defaults to 10.
+            page (int, optional): What entry offset to request. Defaults to 1.
+            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"factions"
+        querystring = {"page": page, "limit": limit}
+        warning_log = f"Unable to list factions"
+        res = self.generic_api_call("GET", endpoint, params=querystring, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def get_faction(self, factionSymbol, raw_res=False, throttle_time=10):
+        """Return a paginated list of all the factions in the game.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/93c5d5e6ad5b0-list-factions
+
+        Example response:
+        {
+            "data": {
+                "symbol": "COSMIC",
+                "name": "string",
+                "description": "string",
+                "headquarters": "string",
+                "traits": [
+                    {
+                        "symbol": "BUREAUCRATIC",
+                        "name": "string",
+                        "description": "string"
+                    }
+                ],
+                "isRecruiting": true
+            }
+        }
+
+        Parameters:
+            factionSymbol (str): How many entries to return per page. Defaults to 10.
+            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"factions/" + factionSymbol
+        warning_log = f"Unable to fetch faction"
+        res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
 
 

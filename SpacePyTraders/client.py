@@ -311,7 +311,7 @@ class Ships (Client):
         Args:
             shipSymbol (str): The ship's symbol (id)
             mode (str): What type of scan do you want to undertake. APPROACHING_SHIPS, DEPARTING_SHIPS, SYSTEM, WAYPOINT
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -331,7 +331,7 @@ class Ships (Client):
 
         Args:
             shipSymbol (str): The ship's symbol (id)
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -445,7 +445,7 @@ class Systems (Client):
 
         Args:
             ship_symbol (str): symbol of ship that will perform the charting
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -463,7 +463,7 @@ class Systems (Client):
         """Return a list of all systems.
 
         Args:
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -483,7 +483,7 @@ class Systems (Client):
 
         Args:
             system_symbol (str): symbol of system to get list of waypoints
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -503,7 +503,7 @@ class Systems (Client):
         Args:
             system_symbol (str): Symbol of system waypoint is located in
             waypoint_symbol (str): Symbol of waypoint to get details for
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -597,7 +597,7 @@ class Agent(Client):
         }
 
         Args:
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -636,7 +636,7 @@ class Agent(Client):
         Parameters:
             limit (int, optional): How many entries to return per page. Defaults to 10.
             page (int, optional): What entry offset to request. Defaults to 1.
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -668,7 +668,7 @@ class Agent(Client):
 
         Parameters:
             agentSymbol (str, required): The agent symbol. Defaults to FEBA66.
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -686,7 +686,7 @@ class Agent(Client):
         Args:
             symbol (str): The symbol for your agent's ships
             faction (str): The faction you wish to join
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -747,7 +747,7 @@ class Faction(Client):
         Parameters:
             limit (int, optional): How many entries to return per page. Defaults to 10.
             page (int, optional): What entry offset to request. Defaults to 1.
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -785,7 +785,7 @@ class Faction(Client):
 
         Parameters:
             factionSymbol (str): How many entries to return per page. Defaults to 10.
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -813,7 +813,7 @@ class Markets(Client):
         Args:
             shipSymbol (str): The symbol for your agent's ships
             tradeSymbol (str): Symbol for communicatino relay that you want to deploy to the waypoint.
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -833,7 +833,7 @@ class Markets(Client):
 
         Args:
             trade_symbol (str): symbol of the trade good you want to import
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -852,7 +852,7 @@ class Markets(Client):
 
         Args:
             trade_symbol (str): symbol of the trade good you want to import
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -871,7 +871,7 @@ class Markets(Client):
 
         Args:
             trade_symbol (str): symbol of the trade good you want to import
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -893,7 +893,7 @@ class Markets(Client):
 
         Args:
             system_symbol (sre): symbol of the system you want to list markets for
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -918,7 +918,7 @@ class Markets(Client):
         Args:
             system_symbol (str): Symbol for the system the market is located in
             waypoint_symbol (str): Symbol for the waypoint the market is located in
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -952,7 +952,7 @@ class Trade(Client):
             ship_symbol (str): Symbol of the ship to transfer the cargo onto
             trade_symbol (str): symbol of the trade good to purchase
             units (str): how many units of the trade good to purchase
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -987,7 +987,7 @@ class Trade(Client):
             ship_symbol (str): Symbol of the ship to transfer the cargo from
             trade_symbol (str): symbol of the trade good to sell
             units (int): how many units of the trade good to sell
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1019,7 +1019,7 @@ class Navigation(Client):
 
         Args:
             ship_symbol (str): Symbol of the ship to dock
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1046,7 +1046,7 @@ class Navigation(Client):
 
         Args:
             ship_symbol (str): Symbol of the ship to dock
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1066,7 +1066,7 @@ class Navigation(Client):
         Args:
             ship_symbol (str): Symbol of ship to make a jump
             destination (str): System to jump to
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1086,7 +1086,7 @@ class Navigation(Client):
 
         Args:
             ship_symbol (str): Symbol of the ship to check it's cooldown for
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1113,7 +1113,7 @@ class Navigation(Client):
 
         Args:
             ship_symbol (str): Symbol of ship to refuel
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1147,7 +1147,7 @@ class Navigation(Client):
         Args:
             ship_symbol (str): Symbol of ship to fly
             destination (str): Symbol of destination to fly to
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1167,7 +1167,7 @@ class Navigation(Client):
 
         Args:
             ship_symbol (str): Symbol of ship to check navigation status for
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1185,56 +1185,61 @@ class Navigation(Client):
 class Contracts(Client):
     """Endpoints to handle contracts"""
     def deliver_contract(self, ship_symbol, contract_id, trade_symbol, units, raw_res=False, throttle_time=10):
-        """Deliver cargo on a given contract.
+        """Deliver cargo to a contract.
 
-        Args:
-            ship_symbol (str): The symbol of the ship
-            contract_id (str): Id of contract to deliver goods for
-            trade_symbol (sre): Trade goods to deliver
-            units (int): how many units to deliver
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+        https://spacetraders.stoplight.io/docs/spacetraders/8f89f3b4a246e-deliver-cargo-to-contract
+
+        Parameters:
+            ship_symbol (str): Symbol of a ship located in the destination to deliver a contract and that has a good to deliver in its cargo.
+            contract_id (str): The ID of the contract.
+            trade_symbol (sre): The symbol of the good to deliver.
+            units (int): Amount of units to deliver.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
             dict: JSON response
-
-            API Link: https://spacetraders.stoplight.io/docs/spacetraders/b3A6NDQ2NjQ0MjE-deliver-on-contract
         """
-        endpoint = f"my/ships/{ship_symbol}/deliver"
+        endpoint = f"my/contracts/{contract_id}/deliver"
         params={
-            'contractId': contract_id,
+            'shipSymbol': ship_symbol,
             'tradeSymbol': trade_symbol,
             'units': units
         }
-        warning_log = f"Unable to deliver trade goods for contract: {ship_symbol}"
-        res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
-                                    raw_res=raw_res, throttle_time=throttle_time, params=params)
+        warning_log = f"Unable to deliver trade goods for contract: {contract_id}"
+        res = self.generic_api_call("POST", endpoint, params=params, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
 
-    def list_contracts(self, raw_res=False, throttle_time=10):
-        """List all of your contracts.
+    def list_contracts(self, limit=10, page=1, raw_res=False, throttle_time=10):
+        """Return a paginated list of all your contracts.
 
-        Args:
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+        https://spacetraders.stoplight.io/docs/spacetraders/b5d513949b11a-list-contracts
+
+        Parameters:
+            limit (int, optional): How many entries to return per page. Defaults to 10.
+            page (int, optional): What entry offset to request. Defaults to 1.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
             dict: JSON response
-
-            API Link: https://spacetraders.stoplight.io/docs/spacetraders/b3A6NDQ5NDc4NTg-list-contracts
         """
         endpoint = f"my/contracts"
-        warning_log = f"Unable to get a list of your contracts"
-        res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log,
+        querystring = {"page": page, "limit": limit}
+        warning_log = f"Unable to get a list contracts"
+        res = self.generic_api_call("GET", endpoint, params=querystring, token=self.token, warning_log=warning_log,
                                     raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
 
-    def contract_details(self, contract_id, raw_res=False, throttle_time=10):
+    def get_contract(self, contract_id, raw_res=False, throttle_time=10):
         """Get the details of a contract by ID.
 
-        Args:
+        https://spacetraders.stoplight.io/docs/spacetraders/2889d8b056533-get-contract
+
+        Parameters:
             contract_id (str): Id of contract to get the details for
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1247,17 +1252,17 @@ class Contracts(Client):
         return res if res else False
 
     def accept_contract(self, contract_id, raw_res=False, throttle_time=10):
-        """Accept a contract.
+        """Accept a contract by ID.
 
-        Args:
+        https://spacetraders.stoplight.io/docs/spacetraders/7dbc359629250-accept-contract
+
+        Parameters:
             contract_id (str): ID of contract to accept
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
             dict: JSON response
-
-            API Link: https://spacetraders.stoplight.io/docs/spacetraders/b3A6NDQ5NTI5NjQ-accept-contract
         """
         endpoint = f"my/contracts/{contract_id}/accept"
         warning_log = f"Unable to accept contract: {contract_id}"
@@ -1265,7 +1270,24 @@ class Contracts(Client):
                                     raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
 
+    def fulfill_contract(self, contract_id, raw_res=False, throttle_time=10):
+        """Fulfill a contract. Can only be used on contracts that have all of their delivery terms fulfilled.
 
+        https://spacetraders.stoplight.io/docs/spacetraders/d4ff41c101af0-fulfill-contract
+
+        Parameters:
+            contract_id (str): ID of contract to accept
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/contracts/{contract_id}/fulfill"
+        warning_log = f"Unable to fulfill contract: {contract_id}"
+        res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
 class Extract(Client):
     """Functions related to extracting resources from a waypoint"""
     def extract_resource(self, ship_symbol, survey = {}, raw_res=False, throttle_time=10):
@@ -1293,7 +1315,7 @@ class Extract(Client):
         Args:
             ship_symbol (str): Symbol of ship performing the extraction
             payload (dict): entire response from a survey of a waypoint
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1310,7 +1332,7 @@ class Extract(Client):
 
         Args:
             ship_symbol (str): Symbol of ship to get status for
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1336,7 +1358,7 @@ class Extract(Client):
 
         Args:
             ship_symbol (str): Symbol of ship to perform the survey
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1356,7 +1378,7 @@ class Extract(Client):
 
         Args:
             ship_symbol (str): symbol of ship to check status of cooldown
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1377,7 +1399,7 @@ class Shipyard(Client):
 
         Args:
             listing_id (str): The id of the shipyard listing you want to purchase.
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1397,7 +1419,7 @@ class Shipyard(Client):
 
         Args:
             system_symbol (str): symbol of system to get list of shipyards for
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1417,7 +1439,7 @@ class Shipyard(Client):
         Args:
             system_symbol (str): Symbol of system shipyard is located in
             waypoint_symbol (str): Symbol of waypoint shipyeard is located in
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
@@ -1437,7 +1459,7 @@ class Shipyard(Client):
         Args:
             system_symbol (str): system shipyard is located in
             waypoint_symbol (str): waypoint shipyard is located in
-            raw_res (bool, optional): Return raw respose insteas of JSON. Defaults to False.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:

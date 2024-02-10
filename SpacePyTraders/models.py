@@ -125,7 +125,7 @@ class Marketplace (Location):
         """Returns a Good object for the symbol provided
 
         Args:
-            symbol (str): Symbol of the good Eg: "FUEL"
+            symbol (str): Symbol of the symbol Eg: "FUEL"
 
         Returns:
             Good: Good object for the symbol given

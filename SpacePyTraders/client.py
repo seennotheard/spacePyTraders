@@ -7,11 +7,10 @@ import warnings
 from ratelimit import limits, sleep_and_retry
 import json
 
-
-
 URL = "https://api.spacetraders.io/"
 V2_URL = "https://api.spacetraders.io/v2/"
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(thread)d - %(message)s', level=logging.INFO)
+
 
 # Custom Exceptions
 # ------------------------------------------
@@ -20,21 +19,24 @@ class ThrottleException(Exception):
     data: field(default_factory=dict)
     message: str = "Throttle limit was reached. Pausing to wait for throttle"
 
+
 @dataclass
 class ServerException(Exception):
     data: field(default_factory=dict)
     message: str = "Server Error. Pausing before trying again"
 
+
 @dataclass
 class TooManyTriesException(Exception):
     message: str = "Has failed too many times to make API call. "
+
 
 @sleep_and_retry
 @limits(calls=2, period=1.2)
 def make_request(method, url, headers, params):
     """Checks which method to use and then makes the actual request to Space Traders API
 
-    Args:
+    Parameters:
         method (str): The HTTP method to use
         url (str): The URL of the request
         headers (dict): the request headers holding the Auth
@@ -52,8 +54,9 @@ def make_request(method, url, headers, params):
     if method == "GET":
         return requests.get(url, headers=headers, params=params)
     elif method == "POST":
-        return requests.post(url, headers=headers, data=params)
-    elif method == "PUT": 
+        print(type(params))
+        return requests.post(url, headers=headers, json=params)
+    elif method == "PUT":
         return requests.put(url, headers=headers, data=params)
     elif method == "DELETE":
         return requests.delete(url, headers=headers, data=params)
@@ -62,15 +65,16 @@ def make_request(method, url, headers, params):
     if method not in ["GET", "POST", "PUT", "DELETE"]:
         logging.exception(f'Invalid method provided: {method}')
 
+
 @dataclass
-class Client ():
+class Client():
     def __init__(self, username=None, token=None):
         """The Client class handles all user interaction with the Space Traders API. 
         The class is initiated with the username and token of the user. 
         If the user does not provide a token the 'create_user' method will attempt to fire and create a user with the username provided. 
         If a user with the name already exists an exception will fire. 
 
-        Args:
+        Parameters:
             username (str): Username of the user
             token (str): The personal auth token for the user. If None will invoke the 'create_user' method
             v2 (bool): Determine if you want to use the new V2 API or V1
@@ -79,11 +83,12 @@ class Client ():
         self.token = token
         self.url = V2_URL
 
-    def generic_api_call(self, method, endpoint, params=None, token=None, warning_log=None, raw_res=False, throttle_time=10):
+    def generic_api_call(self, method, endpoint, params=None, token=None, warning_log=None, raw_res=False,
+                         throttle_time=10):
         """Function to make consolidate parameters to make an API call to the Space Traders API. 
         Handles any throttling or error returned by the Space Traders API. 
 
-        Args:
+        Parameters:
             method (str): The HTTP method to use. GET, POST, PUT or DELETE
             endpoint (str): The API endpoint
             params (dict, optional): Any params required for the endpoint. Defaults to None.
@@ -96,19 +101,22 @@ class Client ():
         """
         headers = {
             'Authorization': 'Bearer ' + token,
+            'Accept': 'application/json',
             'Content-Type': 'application/json'
         }
         # Make the request to the Space Traders API
         for i in range(10):
             try:
-                r = make_request(method, self.url + endpoint, headers, params) 
+                r = make_request(method=method, url=self.url + endpoint, headers=headers, params=params)
                 # If an error returned from api 
                 if 'error' in r.json():
                     error = r.json()
                     code = error['error']['code']
                     message = error['error']['message']
-                    logging.warning(f"An error has occurred when hitting: {r.request.method} {r.url} with parameters: {params}. Error: " + str(error))
-                    
+                    logging.warning(
+                        f"An error has occurred when hitting: {r.request.method} {r.url} with parameters: {params}. Error: " + str(
+                            error))
+
                     # If throttling error
                     if code == 42901:
                         raise ThrottleException(error)
@@ -116,7 +124,7 @@ class Client ():
                     # Retry if server error
                     if code == 500 or code == 409:
                         raise ServerException(error)
-                    
+
                     # Unknown handling for error
                     logging.warning(warning_log)
                     logging.exception(f"Something broke the script. Code: {code} Error Message: {message} ")
@@ -128,146 +136,360 @@ class Client ():
                     return r.json()
 
             except ThrottleException as te:
-                    logging.info(te.message)
-                    time.sleep(throttle_time)
-                    continue
+                logging.info(te.message)
+                time.sleep(throttle_time)
+                continue
 
             except ServerException as se:
-                    logging.info(se.message)
-                    time.sleep(throttle_time)
-                    continue
-            
+                logging.info(se.message)
+                time.sleep(throttle_time)
+                continue
+
             except Exception as e:
                 return e
-        
+
         # If failed to make call after 10 tries fail it
-        raise(TooManyTriesException)
+        raise (TooManyTriesException)
 
 
+class Fleet(Client):
+    def list_ships(self, limit=10, page=1, raw_res=False, throttle_time=10):
+        """Return a paginated list of all of ships under your agent's ownership.
 
-class Ships (Client):
-    def buy_ship(self, location, type, raw_res=False, throttle_time=10):
-        """Buys a ship of the type provided and at the location provided. 
-        Certain ships can only be bought from specific locations. Use get_available_ships to see full list.
+        https://spacetraders.stoplight.io/docs/spacetraders/64435cafd9005-list-ships
 
-        Args:
-            location (str): symbol of the location the ship to buy is
-            type (str): type of ship you want to buy e.g. GR-MK-III
+        Parameters:
+            limit (int, optional): How many entries to return per page. Defaults to 10.
+            page (int, optional): What entry offset to request. Defaults to 1.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: A JSON list of the ships you own.
         """
         endpoint = f"my/ships"
-        params = {"location": location, "type": type}
-        warning_log = F"Unable to buy ship type: {type}, at location: {location}."
-        logging.debug(f"Buying ship of type: {type} at location: {location}")
+        querystring = {"page": page, "limit": limit}
+        warning_log = f"Unable to get list of owned ships."
+        logging.info(f"Getting a list of owned ships")
+        res = self.generic_api_call("GET", endpoint, params=querystring, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def purchase_ship(self, ship_type, waypoint_symbol, raw_res=False, throttle_time=10):
+        """Purchase a ship from a Shipyard. In order to use this function, a ship under your agent's ownership must
+        be in a waypoint that has the Shipyard trait, and the Shipyard must sell the type of the desired ship.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/403855e2e99ad-purchase-ship
+
+        Parameters:
+            ship_type (str): Type of ship
+            waypoint_symbol: The symbol of the waypoint you want to purchase the ship at.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships"
+        params = {"waypointSymbol": waypoint_symbol, "shipType": ship_type}
+        warning_log = f"Unable to buy ship type: {ship_type}, at waypoint: {waypoint_symbol}."
+        logging.debug(f"Buying ship of type: {ship_type} at waypoint: {waypoint_symbol}")
         res = self.generic_api_call("POST", endpoint, params=params, token=self.token, warning_log=warning_log)
         return res if res else False
 
-    # Get Ship
-    def get_ship(self, shipId, raw_res=False, throttle_time=10):
-        """Get info on the ship
+    def get_ship(self, ship_symbol, raw_res=False, throttle_time=10):
+        """Retrieve the details of a ship under your agent's ownership.
 
-        Args:
-            shipId (str): The shipId of the ship you want to get info on
+        https://spacetraders.stoplight.io/docs/spacetraders/800936299c838-get-ship
 
-        Returns:
-            dict: A dict containing the info about the ship
-
-        Example response:
-        {
-            "data": {
-                "symbol": "55B261-1",
-                "crew": null,
-                "officers": null,
-                "fuel": 100,
-                "frame": "FRAME_DRONE",
-                "reactor": "REACTOR_SOLAR_I",
-                "engine": "ENGINE_SOLAR_PROPULSION",
-                "modules": [
-                    "MODULE_CARGO_HOLD"
-                ],
-                "mounts": [
-                    "MOUNT_MINING_LASER_I"
-                ],
-                "registration": {
-                    "factionSymbol": "COMMERCE_REPUBLIC",
-                    "agentSymbol": "55B261",
-                    "fee": 100,
-                    "role": "EXCAVATOR"
-                },
-                "integrity": {
-                    "frame": 1,
-                    "reactor": 1,
-                    "engine": 1
-                },
-                "status": "DOCKED",
-                "location": "X1-OE-PM",
-                "cargo": []
-            }
-        }
-
-        API LINK: https://api.spacetraders.io/#api-ships-GetShip
-        V2 API: https://spacetraders.stoplight.io/docs/spacetraders/b3A6NDQ2NjQ0MzE-view-ship
-        """
-        endpoint = f"my/ships/{shipId}"
-        warning_log = F"Unable to get info fo ship: {shipId}"
-        logging.info(f"Getting info on ship: {shipId}")
-        res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log)
-        return res if res else False
-
-    # Get Users ships
-    def get_user_ships(self, raw_res=False, throttle_time=10):
-        """Get a list of all the ships you own
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
-            dict: A JSON list of the ships you own. Each item is a return from the get_ship_info endpoint.
-
-        API Link: https://api.spacetraders.io/#api-ships-GetShips
-        V2 API: https://spacetraders.stoplight.io/docs/spacetraders/b3A6NDQ2NjQ0MzI-list-ships
+            dict: JSON response
         """
-        endpoint = f"my/ships"
-        warning_log = F"Unable to get list of owned ships."
-        logging.info(f"Getting a list of owned ships")
-        res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log)
+        endpoint = f"my/ships/{ship_symbol}"
+        warning_log = f"Unable to get info on ship: {ship_symbol}"
+        logging.info(f"Getting info on ship: {ship_symbol}")
+        res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
 
-    # Jettison Cargo
-    def jettinson_cargo(self, shipId, good, quantity, raw_res=False, throttle_time=10):
-        """Jettison (delete) some cargo from a ship
+    def get_ship_cargo(self, ship_symbol, raw_res=False, throttle_time=10):
+        """Retrieve the cargo of a ship under your agent's ownership.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/1324f523e2c9c-get-ship-cargo
+
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships/{ship_symbol}/cargo"
+        warning_log = f"Unable to get info on ship cargo: {ship_symbol}"
+        logging.info(f"Getting info on ship cargo: {ship_symbol}")
+        res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def orbit_ship(self, ship_symbol, raw_res=False, throttle_time=10):
+        """Attempt to move your ship into orbit at its current location. The request will only succeed if your ship
+        is capable of moving into orbit at the time of the request.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/08777d60b6197-orbit-ship
+
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships/{ship_symbol}/orbit"
+        warning_log = f"Unable to orbit ship: {ship_symbol}"
+        res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def ship_refine(self, ship_symbol, produce, raw_res=False, throttle_time=10):
+        """Attempt to refine the raw materials on your ship. The request will only succeed if your ship is capable of
+        refining at the time of the request.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/c42b57743a49f-ship-refine
+
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            produce (str): The type of trade_symbol to waypoint_symbol out of the refining process.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships/{ship_symbol}/refine"
+        params = {"waypoint_symbol": produce}
+        warning_log = f"Unable to waypoint_symbol on ship: {ship_symbol}"
+        res = self.generic_api_call("POST", endpoint, params=params, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def create_chart(self, ship_symbol, raw_res=False, throttle_time=10):
+        """Command a ship to chart the waypoint at its current location.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/177f127c7f888-create-chart
+
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships/{ship_symbol}/orbit"
+        warning_log = f"Unable to chart on ship: {ship_symbol}"
+        res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def get_ship_cooldown(self, ship_symbol, raw_res=False, throttle_time=10):
+        """Retrieve the details of your ship's reactor cooldown. Some actions such as activating your jump drive,
+        scanning, or extracting resources taxes your reactor and results in a cooldown.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/d20ef14bc0742-get-ship-cooldown
+
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships/{ship_symbol}/cooldown"
+        warning_log = f"Unable to get ship cooldown: {ship_symbol}"
+        res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def dock_ship(self, ship_symbol, raw_res=False, throttle_time=10):
+        """Attempt to dock your ship at its current location. Docking will only succeed if your ship is capable of
+        docking at the time of the request.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/a1061ae6545d5-dock-ship
+
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships/{ship_symbol}/dock"
+        warning_log = f"Unable to dock ship: {ship_symbol}"
+        res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def create_survey(self, ship_symbol, raw_res=False, throttle_time=10):
+        """Create surveys on a waypoint that can be extracted such as asteroid fields. A survey focuses on specific
+        types of deposits from the extracted location. When ships extract using this survey, they are guaranteed to
+        procure a high amount of one of the goods in the survey.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/6b7cb030c3b91-create-survey
+
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships/{ship_symbol}/survey"
+        warning_log = f"Unable to survey on ship: {ship_symbol}"
+        res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def extract_resources(self, ship_symbol, raw_res=False, throttle_time=10):
+        """Extract resources from a waypoint that can be extracted, such as asteroid fields, into your ship. Send an
+        optional survey as the payload to target specific yields.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/b3931d097608d-extract-resources
+
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships/{ship_symbol}/extract"
+        warning_log = f"Unable to extract on ship: {ship_symbol}"
+        res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def siphon_resources(self, ship_symbol, raw_res=False, throttle_time=10):
+        """Siphon gases, such as hydrocarbon, from gas giants.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/f6c0d7877c43a-siphon-resources
+
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships/{ship_symbol}/siphon"
+        warning_log = f"Unable to siphon on ship: {ship_symbol}"
+        res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def jettison_cargo(self, ship_symbol, symbol, units, raw_res=False, throttle_time=10):
+        """Jettison cargo from your ship's cargo hold.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/3b0f8b69f56ac-jettison-cargo
 
         Response Example:
-
         {
             "data": {
-                "tradeSymbol": "ALUMINUM",
-                "units": 95
+                "cargo": {
+                    "capacity": 0,
+                    "units": 0,
+                    "inventory": [
+                        {
+                            "symbol": "PRECIOUS_STONES",
+                            "name": "string",
+                            "description": "string",
+                            "units": 1
+                        }
+                    ]
+                }
             }
         }
 
-        Args:
-            shipId (str): The shipId of the ship you want to jettison cargo from
-            good (str): The symbol of the good you want to jettison. Eg. FUEL
-            quantity (int): How many units of the good you want to jettison
+        Parameters:
+            ship_symbol (str): The ship symbol.
+            symbol (str): The trade_symbol's symbol.
+            units (int): Amount of units to jettison of this trade_symbol.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
         Returns:
-            dict: If successful a dict is returned with the remaining quantitiy of the good on the ship
-
-        API Link: https://api.spacetraders.io/#api-ships-JettisonCargo
-        V2 Link: https://spacetraders.stoplight.io/docs/spacetraders/b3A6NDQ2NjQ0MjQ-jettison-cargo
+            dict: JSON response
         """
-        endpoint = f"my/ships/{shipId}/jettison"
-        warning_log = F"Unable to jettison cargo from ship. Params - shipId: {shipId}, good: {good}, quantity: {quantity}"
-        logging.info(f"Jettison the following cargo from ship: {shipId}, good: {good}, quantity: {quantity}")
-        params = {"good": good, "quantity": quantity}
-        res = self.generic_api_call("POST", endpoint, params=params, token=self.token, warning_log=warning_log)
+        endpoint = f"my/ships/{ship_symbol}/jettison"
+        warning_log = (f"Unable to jettison cargo from ship. Params - ship_symbol: {ship_symbol}, symbol: {symbol}, "
+                       f"units: {units}")
+        logging.info(f"Jettison the following cargo from ship: {ship_symbol}, symbol: {symbol}, units: {units}")
+        params = {"symbol": symbol, "units": units}
+        res = self.generic_api_call("POST", endpoint, params=params, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def jump_ship(self, ship_symbol, waypoint_symbol, raw_res=False, throttle_time=10):
+        """Jump your ship instantly to a target connected waypoint. The ship must be in orbit to execute a jump.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/19f0dd2d633de-jump-ship
+
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            waypoint_symbol (str): The symbol of the waypoint to jump to. The destination must be a connected waypoint.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships/{ship_symbol}/jump"
+        params = {"waypoint_symbol": waypoint_symbol}
+        warning_log = f"Unable to waypoint_symbol on ship: {ship_symbol}"
+        res = self.generic_api_call("POST", endpoint, params=params, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
+        return res if res else False
+
+    def navigate_ship(self, ship_symbol, waypoint_symbol, raw_res=False, throttle_time=10):
+        """Navigate to a target destination. The ship must be in orbit to use this function. The destination waypoint
+        must be within the same system as the ship's current location. Navigating will consume the necessary fuel
+        from the ship's manifest based on the distance to the target waypoint.
+
+        https://spacetraders.stoplight.io/docs/spacetraders/c766b84253edc-navigate-ship
+
+        Parameters:
+            ship_symbol (str): The symbol of the ship.
+            waypoint_symbol (str): The target destination.
+            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
+            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
+
+        Returns:
+            dict: JSON response
+        """
+        endpoint = f"my/ships/{ship_symbol}/jump"
+        params = {"waypoint_symbol": waypoint_symbol}
+        warning_log = f"Unable to waypoint_symbol on ship: {ship_symbol}"
+        res = self.generic_api_call("POST", endpoint, params=params, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
 
     # Scrap Ship
     def scrap_ship(self, shipId, raw_res=False, throttle_time=10):
-        """Scraps the shipId for a small amount of credits. 
+        """Scraps the ship_symbol for a small amount of credits.
         Ships need to be scraped at a location with a Shipyard.
         Known Shipyards:
         - OE-PM-TR
 
-        Args:
+        Parameters:
             shipId (str): ID of the ship to scrap
 
         Returns:
@@ -283,68 +505,28 @@ class Ships (Client):
         return res
 
     # Transfer Cargo
-    def transfer_cargo(self, fromShipId, toShipId, good, quantity, raw_res=False, throttle_time=10):
-        """Move cargo from own ship to another that are in the same location
+    def transfer_cargo(self, origin_ship_symbol, trade_symbol, dest_ship_symbol, units, raw_res=False, throttle_time=10):
+        """Transfer cargo between ships.
 
-        Args:
-            fromShipId (str): The shipId of the ship you want to transfer the cargo FROM
-            toShipId (str): The shipId of the ship you want to transfer the cargo TO
-            good (str): The symbol of the good you want to transfer. Eg. FUEL
-            quantity (int): How many units of the good you want to transfer
+        Parameters:
+            origin_ship_symbol (str): The transferring ship's symbol.
+            trade_symbol (str): The good's symbol.
+            units (int): Amount of units to transfer.
+            dest_ship_symbol (str): The symbol of the ship to transfer to.
 
         Returns:
             dict: A dict is returned with two keys "fromShip" & "toShip" each with the updated ship info for the respective ships
-
-        API Link: https://api.spacetraders.io/#api-ships-TransferCargo
         """
-        endpoint = f"my/ships/{fromShipId}/transfer"
-        warning_log = F"Unable to transfer {quantity} units of {good} from ship: {fromShipId} to ship: {toShipId}"
-        logging.info(f"Transferring {quantity} units of {good} from ship: {fromShipId} to ship: {toShipId}")
-        params = {"toShipId": toShipId, "good": good, "quantity": quantity}
-        res = self.generic_api_call("POST", endpoint, params=params, token=self.token, warning_log=warning_log)
+        endpoint = f"my/ships/{origin_ship_symbol}/transfer"
+        warning_log = f"Unable to transfer {units} units of {trade_symbol} from ship: {origin_ship_symbol} to ship: {dest_ship_symbol}"
+        logging.info(f"Transferring {units} units of {trade_symbol} from ship: {origin_ship_symbol} to ship: {dest_ship_symbol}")
+        params = {"symbol": trade_symbol, "units": units, "dest_ship_symbol": dest_ship_symbol}
+        res = self.generic_api_call("POST", endpoint, params=params, token=self.token, warning_log=warning_log,
+                                    raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
 
-    def scan(self, shipSymbol, mode, raw_res=False, throttle_time=10):
-        """Execute a ship scan to view approach / departing ships, system information or details about a waypoint. 
-           Send a scan mode to select the type of scan performed by your ship.
 
-        Args:
-            shipSymbol (str): The ship's symbol (id)
-            mode (str): What type of scan do you want to undertake. APPROACHING_SHIPS, DEPARTING_SHIPS, SYSTEM, WAYPOINT
-            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
-            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
-
-        Returns:
-            dict: Return JSON repsonse 
-
-            API Link: https://spacetraders.stoplight.io/docs/spacetraders/b3A6NDQ2NjQ0Mjk-scan
-        """
-        endpoint = f"my/ships/{shipSymbol}/scan"
-        params = {"mode": mode}
-        warning_log = f"Unable to perform scan of mode: {mode}"
-        logging.info(f"Unable to perform scan of mode: {mode}")
-        res = self.generic_api_call("POST", endpoint, params=params, token=self.token, warning_log=warning_log)
-        return res if res else False
-
-    def scan_cooldown(self, shipSymbol, raw_res=False, throttle_time=10):
-        """See how long your ship must wait before it can scan again.
-
-        Args:
-            shipSymbol (str): The ship's symbol (id)
-            raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
-            throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
-
-        Returns:
-            dict: Return JSON repsonse 
-
-            API Link: https://spacetraders.stoplight.io/docs/spacetraders/b3A6NDUyMzgxMTc-scan-cooldown
-        """
-        endpoint = f"my/ships/{shipSymbol}/scan"
-        warning_log = f"Unable to obtain scan cooldown for ship: {shipSymbol}"
-        logging.info(f"Unable to obtain scan cooldown for ship: {shipSymbol}")
-        res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log)
-        return res if res else False
-class Systems (Client):
+class Systems(Client):
     # Get system info
     def get_systems(self, raw_res=False, throttle_time=10):
         """[ENDPOINT CURRENTLY BROKEN - DEVS FIXING]
@@ -356,23 +538,24 @@ class Systems (Client):
         """
         # Get user
         endpoint = f"game/systems"
-        warning_log = F"Unable to get systems"
+        warning_log = f"Unable to get systems"
         logging.info(f"Getting systems")
         res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log)
-        return res if res else False    
+        return res if res else False
 
         # Get all active flights
-    def get_active_flight_plans(self, symbol, raw_res=False, throttle_time=10):
+
+    def get_active_flight_plans(self, symbol, raw_res=False, throttle_time=10)
         """Get all the currently active flight plans in the system given. This is for all global accounts
 
-        Args:
+        Parameters:
             symbol (str): Symbol of the system. OE or XV
 
         Returns:
             dict : dict containing a list of flight plans for each system as the key
         """
         endpoint = f"systems/{symbol}/flight-plans"
-        warning_log = F"Unable to get flight plans for system: {symbol}."
+        warning_log = f"Unable to get flight plans for system: {symbol}."
         logging.info(f"Getting the flight plans in the {symbol} system")
         res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log)
         return res if res else False
@@ -381,37 +564,37 @@ class Systems (Client):
     def get_system_locations(self, symbol, raw_res=False, throttle_time=10):
         """Get locations in the defined system
 
-        Args:
+        Parameters:
             symbol (str): The symbol for the system eg: OE
 
         Returns:
             dict: A dict containing a JSON list of the locations in the system
         """
         endpoint = f"systems/{symbol}/locations"
-        warning_log = F"Unable to get the locations in the system: {symbol}"
+        warning_log = f"Unable to get the locations in the system: {symbol}"
         logging.info(f"Getting the locations in system: {symbol}")
         res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log)
-        return res if res else False  
+        return res if res else False
 
     def get_system_docked_ships(self, symbol, raw_res=False, throttle_time=10):
         """Get docked ships in the defined system
 
-        Args:
+        Parameters:
             symbol (str): The symbol for the system eg: OE
 
         Returns:
             dict: A dict containing a JSON list of the docked ships in the system
         """
         endpoint = f"systems/{symbol}/ships"
-        warning_log = F"Unable to get the docked ships in the system: {symbol}"
+        warning_log = f"Unable to get the docked ships in the system: {symbol}"
         logging.info(f"Getting the docked ships in system: {symbol}")
         res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log)
-        return res if res else False 
+        return res if res else False
 
     def get_system(self, symbol, raw_res=False, throttle_time=10):
         """Get info on the definined system
 
-        Args:
+        Parameters:
             symbol (str): The symbol for the system eg: OE
 
         Returns:
@@ -421,29 +604,29 @@ class Systems (Client):
         warning_log = f"Unable to get the  system: {symbol}"
         logging.info(f"Getting the system: {symbol}")
         res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log)
-        return res if res else False 
+        return res if res else False
 
     def get_available_ships(self, symbol, raw_res=False, throttle_time=10):
         """Get the ships listed for sale in the system defined
 
-        Args:
+        Parameters:
             symbol (str): The symbol for the system eg: OE
 
         Returns:
             dict: A dict containing a list of the available ships for sale
         """
         endpoint = f"systems/{symbol}/ship-listings"
-        warning_log = F"Unable to get the listed ships in system: {symbol}"
+        warning_log = f"Unable to get the listed ships in system: {symbol}"
         logging.info(f"Getting the ships available for sale: {symbol}")
         res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log)
-        return res if res else False 
+        return res if res else False
 
     def chart_waypoint(self, ship_symbol, raw_res=False, throttle_time=10):
         """Chart a new system or waypoint. 
         Returns an array of the symbols that have been charted, 
         including the system and the waypoint if both were uncharted, or just the waypoint.
 
-        Args:
+        Parameters:
             ship_symbol (str): symbol of ship that will perform the charting
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -457,12 +640,12 @@ class Systems (Client):
         warning_log = f"Unable to chart the waypoint: {ship_symbol}"
         logging.info(f"Unable to chart the waypoint: {ship_symbol}")
         res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log)
-        return res if res else False 
+        return res if res else False
 
     def list_systems(self, raw_res=False, throttle_time=10):
         """Return a list of all systems.
 
-        Args:
+        Parameters:
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
@@ -475,13 +658,13 @@ class Systems (Client):
         warning_log = f"Unable to view systems"
         logging.info(f"Unable to view systems")
         res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log)
-        return res if res else False 
-    
+        return res if res else False
+
     def list_waypoints(self, system_symbol, raw_res=False, throttle_time=10):
         """Fetch all of the waypoints for a given system. 
         System must be charted or a ship must be present to return waypoint details.
 
-        Args:
+        Parameters:
             system_symbol (str): symbol of system to get list of waypoints
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -500,7 +683,7 @@ class Systems (Client):
     def view_waypoint(self, system_symbol, waypoint_symbol, raw_res=False, throttle_time=10):
         """View the details of a waypoint.
 
-        Args:
+        Parameters:
             system_symbol (str): Symbol of system waypoint is located in
             waypoint_symbol (str): Symbol of waypoint to get details for
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
@@ -516,7 +699,7 @@ class Systems (Client):
         return res if res else False
 
 
-class Api ():
+class Api():
     def __init__(self, username=None, token=None):
         self.token = token
         self.agent = Agent(token=token)
@@ -525,15 +708,15 @@ class Api ():
         self.extract = Extract(token=token)
         self.markets = Markets(token=token)
         self.navigation = Navigation(token=token)
-        self.ships = Ships(token=token)
+        self.fleet = Fleet(token=token)
         self.shipyard = Shipyard(token=token)
         self.systems = Systems(token=token)
         self.trade = Trade(token=token)
 
-    def register_new_agent(self, symbol, faction, *args, **kwargs):
+    def register_new_agent(self, symbol, faction, *Parameters, **kwParameters):
         """Registers a new agent in the Space Traders world
 
-        Args:
+        Parameters:
             symbol (str): The symbol for your agent's ships
             faction (str): The faction you wish to join
 
@@ -541,9 +724,6 @@ class Api ():
             dict: JSON response
         
         Usage:
-            >>> from spacetraders.api import Api
-            >>> api = Api()
-            >>> res = api.register_new_agent("HMS", "QUANTUM")
         """
         endpoint = f"register"
         warning_log = f"Unable to register new agent"
@@ -556,7 +736,7 @@ class Api ():
         if res.ok:
             data = res.json().get("data")
             self.token = data.get("token")
-            self.ships.token = self.token
+            self.fleet.token = self.token
             self.systems.token = self.token
             self.agent.token = self.token
             self.markets.token = self.token
@@ -570,6 +750,7 @@ class Api ():
             logging.warning(res.text)
         return res if res else False
 
+
 #
 #
 # V2 Related Classes
@@ -581,6 +762,7 @@ class Agent(Client):
     """
     Get or create your agent details
     """
+
     def get_my_agent_details(self, raw_res=False, throttle_time=10):
         """Get your agent details
 
@@ -596,7 +778,7 @@ class Agent(Client):
             }
         }
 
-        Args:
+        Parameters:
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
@@ -683,7 +865,7 @@ class Agent(Client):
     def register_new_agent(self, symbol, faction, raw_res=False, throttle_time=10):
         """Registers a new agent in the Space Traders world
 
-        Args:
+        Parameters:
             symbol (str): The symbol for your agent's ships
             faction (str): The faction you wish to join
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
@@ -691,11 +873,6 @@ class Agent(Client):
 
         Returns:
             dict: JSON response
-        
-        Usage:
-            >>> from spacetraders.api import Api
-            >>> api = Api()
-            >>> res = api.agent.register_new_agent("HMS", "QUANTUM")
         """
         endpoint = f"register"
         warning_log = f"Unable to register new agent"
@@ -710,10 +887,8 @@ class Agent(Client):
 
 class Faction(Client):
     """Endpoints related to factions.
-
-    Args:
-        Client (Client): Details to login to your agent
     """
+
     def list_factions(self, limit=10, page=1, raw_res=False, throttle_time=10):
         """View the details of a faction.
 
@@ -800,17 +975,15 @@ class Faction(Client):
 
 class Markets(Client):
     """Endpoints related to interacting with markets in the system
-
-    Args:
-        Client (Client): Details to login to your agent
     """
+
     def deploy_asset(self, ship_symbol, trade_symbol, raw_res=False, throttle_time=10):
         """Use this endpoint to deploy a Communications Relay to a waypoint. 
             A waypoint with a communications relay will allow agents to retrieve price information from the market. 
             Without a relay, agents must send a ship to a market to retrieve price information.
             Communication relays can be purchased from a market that exports COMM_RELAY_I.
 
-        Args:
+        Parameters:
             shipSymbol (str): The symbol for your agent's ships
             tradeSymbol (str): Symbol for communicatino relay that you want to deploy to the waypoint.
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
@@ -831,8 +1004,8 @@ class Markets(Client):
     def trade_imports(self, trade_symbol, raw_res=False, throttle_time=10):
         """TODO: Explain what this endpoint does
 
-        Args:
-            trade_symbol (str): symbol of the trade good you want to import
+        Parameters:
+            trade_symbol (str): symbol of the trade symbol you want to import
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
@@ -850,8 +1023,8 @@ class Markets(Client):
     def trade_exports(self, trade_symbol, raw_res=False, throttle_time=10):
         """TODO: Explain what this endpoint does
 
-        Args:
-            trade_symbol (str): symbol of the trade good you want to import
+        Parameters:
+            trade_symbol (str): symbol of the trade symbol you want to import
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
@@ -865,12 +1038,12 @@ class Markets(Client):
         res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log,
                                     raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
-    
+
     def trade_exchanges(self, trade_symbol, raw_res=False, throttle_time=10):
         """TODO: Explain what this endpoint does
 
-        Args:
-            trade_symbol (str): symbol of the trade good you want to import
+        Parameters:
+            trade_symbol (str): symbol of the trade symbol you want to import
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
@@ -880,7 +1053,7 @@ class Markets(Client):
         API Link: https://spacetraders.stoplight.io/docs/spacetraders/b3A6NDY0MDgxNjA-trade-exchanges
         """
         endpoint = f"trade/{trade_symbol}/exchange"
-        warning_log = f"Unable to view trade exchange for trade good: {trade_symbol}"
+        warning_log = f"Unable to view trade exchange for trade symbol: {trade_symbol}"
         res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log,
                                     raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
@@ -891,7 +1064,7 @@ class Markets(Client):
 
            To install a communications relay at a market, look at the my/ships/{shipSymbol}/deploy endpoint.
 
-        Args:
+        Parameters:
             system_symbol (sre): symbol of the system you want to list markets for
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -915,7 +1088,7 @@ class Markets(Client):
 
            See /my/ships/{shipSymbol}/deploy for deploying relays at a location.
 
-        Args:
+        Parameters:
             system_symbol (str): Symbol for the system the market is located in
             waypoint_symbol (str): Symbol for the waypoint the market is located in
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
@@ -935,6 +1108,7 @@ class Markets(Client):
 
 class Trade(Client):
     "Buy and Sell cargo"
+
     def purchase_cargo(self, ship_symbol, trade_symbol, units, raw_res=False, throttle_time=10):
         """Purchase cargo from a waypoint's market
         
@@ -948,10 +1122,10 @@ class Trade(Client):
             }
         }
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of the ship to transfer the cargo onto
-            trade_symbol (str): symbol of the trade good to purchase
-            units (str): how many units of the trade good to purchase
+            trade_symbol (str): symbol of the trade symbol to purchase
+            units (str): how many units of the trade symbol to purchase
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
@@ -965,7 +1139,7 @@ class Trade(Client):
             'tradeSymbol': trade_symbol,
             'units': units
         }
-        warning_log = f"Unable to get purchase {units} units of good: {trade_symbol} onto ship: {ship_symbol}"
+        warning_log = f"Unable to get purchase {units} units of symbol: {trade_symbol} onto ship: {ship_symbol}"
         res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
                                     raw_res=raw_res, throttle_time=throttle_time, params=params)
         return res if res else False
@@ -983,10 +1157,10 @@ class Trade(Client):
             }
         }
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of the ship to transfer the cargo from
-            trade_symbol (str): symbol of the trade good to sell
-            units (int): how many units of the trade good to sell
+            trade_symbol (str): symbol of the trade symbol to sell
+            units (int): how many units of the trade symbol to sell
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
 
@@ -1000,7 +1174,7 @@ class Trade(Client):
             'tradeSymbol': trade_symbol,
             'units': units
         }
-        warning_log = f"Unable to get purchase {units} units of good: {trade_symbol} onto ship: {ship_symbol}"
+        warning_log = f"Unable to get purchase {units} units of symbol: {trade_symbol} onto ship: {ship_symbol}"
         res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
                                     raw_res=raw_res, throttle_time=throttle_time, params=params)
         return res if res else False
@@ -1017,7 +1191,7 @@ class Navigation(Client):
             }
         }
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of the ship to dock
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -1044,7 +1218,7 @@ class Navigation(Client):
             }
         }
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of the ship to dock
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -1059,11 +1233,11 @@ class Navigation(Client):
         res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
                                     raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
-    
+
     def jump_ship(self, ship_symbol, destination, raw_res=False, throttle_time=10):
         """Navigate a ship between systems
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of ship to make a jump
             destination (str): System to jump to
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
@@ -1084,7 +1258,7 @@ class Navigation(Client):
     def jump_cooldown(self, ship_symbol, raw_res=False, throttle_time=10):
         """See how long your ship has on cooldown
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of the ship to check it's cooldown for
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -1099,7 +1273,7 @@ class Navigation(Client):
         res = self.generic_api_call("GET", endpoint, token=self.token, warning_log=warning_log,
                                     raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
-    
+
     def refuel_ship(self, ship_symbol, raw_res=False, throttle_time=10):
         """Fully refuel a ship
 
@@ -1111,7 +1285,7 @@ class Navigation(Client):
             }
         }
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of ship to refuel
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -1144,7 +1318,7 @@ class Navigation(Client):
             }
         }
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of ship to fly
             destination (str): Symbol of destination to fly to
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
@@ -1165,7 +1339,7 @@ class Navigation(Client):
     def navigation_status(self, ship_symbol, raw_res=False, throttle_time=10):
         """Checks to see the status of a ships navigation path
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of ship to check navigation status for
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -1184,15 +1358,16 @@ class Navigation(Client):
 
 class Contracts(Client):
     """Endpoints to handle contracts"""
+
     def deliver_contract(self, ship_symbol, contract_id, trade_symbol, units, raw_res=False, throttle_time=10):
         """Deliver cargo to a contract.
 
         https://spacetraders.stoplight.io/docs/spacetraders/8f89f3b4a246e-deliver-cargo-to-contract
 
         Parameters:
-            ship_symbol (str): Symbol of a ship located in the destination to deliver a contract and that has a good to deliver in its cargo.
+            ship_symbol (str): Symbol of a ship located in the destination to deliver a contract and that has a symbol to deliver in its cargo.
             contract_id (str): The ID of the contract.
-            trade_symbol (sre): The symbol of the good to deliver.
+            trade_symbol (sre): The symbol of the symbol to deliver.
             units (int): Amount of units to deliver.
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -1201,7 +1376,7 @@ class Contracts(Client):
             dict: JSON response
         """
         endpoint = f"my/contracts/{contract_id}/deliver"
-        params={
+        params = {
             'shipSymbol': ship_symbol,
             'tradeSymbol': trade_symbol,
             'units': units
@@ -1288,9 +1463,12 @@ class Contracts(Client):
         res = self.generic_api_call("POST", endpoint, token=self.token, warning_log=warning_log,
                                     raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
+
+
 class Extract(Client):
     """Functions related to extracting resources from a waypoint"""
-    def extract_resource(self, ship_symbol, survey = {}, raw_res=False, throttle_time=10):
+
+    def extract_resource(self, ship_symbol, survey={}, raw_res=False, throttle_time=10):
         """Extract resources from the waypoint into your ship. 
         Send a survey as the payload to target specific yields. 
         The entire survey must be sent as it contains a signature that the backend verifies.
@@ -1312,7 +1490,7 @@ class Extract(Client):
             }
         }
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of ship performing the extraction
             payload (dict): entire response from a survey of a waypoint
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
@@ -1330,7 +1508,7 @@ class Extract(Client):
     def extraction_cooldown(self, ship_symbol, raw_res=False, throttle_time=10):
         """Get the status of your last extraction.
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of ship to get status for
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -1356,7 +1534,7 @@ class Extract(Client):
         Surveys will eventually expire after a period of time. 
         Multiple ships can use the same survey for extraction.
 
-        Args:
+        Parameters:
             ship_symbol (str): Symbol of ship to perform the survey
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -1376,7 +1554,7 @@ class Extract(Client):
         """Executing a survey will initiate a cooldown for a number of seconds before you can call it again. 
         This endpoint returns the details of your cooldown, or a 404 if there is no cooldown for the survey action.
 
-        Args:
+        Parameters:
             ship_symbol (str): symbol of ship to check status of cooldown
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -1392,12 +1570,14 @@ class Extract(Client):
                                     raw_res=raw_res, throttle_time=throttle_time)
         return res if res else False
 
+
 class Shipyard(Client):
     """Function specific to handling shipyard"""
+
     def purchase_ship(self, listing_id, raw_res=False, throttle_time=10):
         """Purchase a ship
 
-        Args:
+        Parameters:
             listing_id (str): The id of the shipyard listing you want to purchase.
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -1417,7 +1597,7 @@ class Shipyard(Client):
     def list_shipyards(self, system_symbol, raw_res=False, throttle_time=10):
         """Returns a list of all shipyards in a system.
 
-        Args:
+        Parameters:
             system_symbol (str): symbol of system to get list of shipyards for
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
             throttle_time (int, optional): How long to wait before attempting call again. Defaults to 10.
@@ -1436,7 +1616,7 @@ class Shipyard(Client):
     def shipyard_details(self, system_symbol, waypoint_symbol, raw_res=False, throttle_time=10):
         """Get details about a shipyard
 
-        Args:
+        Parameters:
             system_symbol (str): Symbol of system shipyard is located in
             waypoint_symbol (str): Symbol of waypoint shipyeard is located in
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
@@ -1456,7 +1636,7 @@ class Shipyard(Client):
     def shipyard_listings(self, system_symbol, waypoint_symbol, raw_res=False, throttle_time=10):
         """View ships available for purchase in shipyard
 
-        Args:
+        Parameters:
             system_symbol (str): system shipyard is located in
             waypoint_symbol (str): waypoint shipyard is located in
             raw_res (bool, optional): Return raw response instead of JSON. Defaults to False.
@@ -1475,9 +1655,9 @@ class Shipyard(Client):
 if __name__ == "__main__":
     token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGlmaWVyIjoiSE1BUyIsImlhdCI6MTY1Mzc4NDEzNSwic3ViIjoiYWdlbnQtdG9rZW4ifQ.ovMpoIza1Xd9f5WfvxtvQTGmHVELXfea9sdm-usgdnFxr_vLxm3YTIFMxZPeptIXd_GVc9rX4m_iEajpu_DZzeO4uDO0w66vY9GNnltdid243v1ePMVacTZg0sVsVLG24SjL5hlNrb-4TUZ8yDJkdg-C4w_1ODbB3YZ1KxrHTt4u4F-zbfuW8JNkAJBa-KBUHhpI3Abl3G699KzNYuj77m5u1XtBtDfHBXHQqTeSlz72jf5nLUSFcN4BGoADCPyZxmUPK4C9NRW_IYUiEqa4i7ETBaoUVl-Ot6bnEJ2ZTciDqj8cdgZHMsMqq68pB_fnw1-hkaECVxkwSK6uK3LmPVD0R8-BtVcxOx0NvDQxKyLoLjKHPxAbOgfk1j_51qJuscPxzosPkimK8wOZGlxuUrXCp6FAwVHzIcDhU-Y0KvLdG-OZpM6nDJZe-2WbjCeFhM8JgDG-Sne2kTY32MfhVYWMeXdNmRuTOJaCCh-dF5WVRs53bGzczsYhYz4tAbbU"
     client = Client("HMAS", token=token, v2=True)
-    ship = Ships("", token, v2=True)
+    ship = Fleet("", token, v2=True)
     extract = Shipyard("", token, v2=True)
-    print(ship.get_user_ships())
+    print(ship.list_ships())
     # username = "JimHawkins"
     # token = "0930cc36-7dc7-4cb1-8823-d8e72594d91e"
 

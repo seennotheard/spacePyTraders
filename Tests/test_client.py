@@ -92,8 +92,8 @@ class TestClientClassMethods(unittest.TestCase):
 @pytest.mark.ships
 def test_ships_init():
     """ Test that the class initiates properly """
-    ship = Ships("JimHawkins", "12345")
-    assert isinstance(ship, Ships)
+    ship = Fleet("JimHawkins", "12345")
+    assert isinstance(ship, Fleet)
     assert ship.username == "JimHawkins"
     assert ship.token == "12345"
 
@@ -119,8 +119,8 @@ def test_ships_get_users_ships(api: Api, mock_endpoints):
 @pytest.mark.ships
 def test_ships_jettison_cargo(api: Api, mock_endpoints):
     mock_endpoints.add(responses.POST, f"{BASE_URL}my/ships/12345/jettison", json=MOCKS['jettison_cargo'], status=200)
-    r = api.ships.jettinson_cargo("12345", "FUEL", 1)
-    assert mock_endpoints.calls[0].request.params == {"good": "FUEL", "quantity": "1"}
+    r = api.ships.jettison_cargo("12345", "FUEL", 1)
+    assert mock_endpoints.calls[0].request.params == {"symbol": "FUEL", "units": "1"}
     assert isinstance(r, dict)
 
 @pytest.mark.ships
@@ -133,7 +133,7 @@ def test_ships_scrap_ship(api: Api, mock_endpoints):
 def test_ships_transfer_cargo(api: Api, mock_endpoints):
     mock_endpoints.add(responses.POST, f"{BASE_URL}my/ships/12345/transfer", json=MOCKS['transfer_cargo'], status=200)
     r = api.ships.transfer_cargo("12345", "54321", "FUEL", 1)
-    assert mock_endpoints.calls[0].request.params == {"toShipId": "54321", "good": "FUEL", "quantity": "1"}
+    assert mock_endpoints.calls[0].request.params == {"dest_ship_symbol": "54321", "symbol": "FUEL", "units": "1"}
     assert isinstance(r, dict)
 
 # FlightPlan Endpoints
@@ -151,12 +151,12 @@ def test_flightplans_get_flightplan(api: Api, mock_endpoints):
     mock_endpoints.add(responses.GET, f"{BASE_URL}my/flight-plans/12345", json=MOCKS['flightplan'], status=200)
     r = api.flightplans.get_flight_plan("12345")
     assert isinstance(r, dict)
-#match=responses.json_params_matcher({"shipId": "12345", "destination": "OE-PM"}),
+#match=responses.json_params_matcher({"ship_symbol": "12345", "destination": "OE-PM"}),
 @pytest.mark.flightplans
 def test_flightplans_submit_flightplan(api: Api, mock_endpoints):
     mock_endpoints.add(responses.POST, f"{BASE_URL}my/flight-plans", json=MOCKS['submit_flightplan'], status=200)
     r = api.flightplans.new_flight_plan("12345", "OE-PM")
-    assert mock_endpoints.calls[0].request.params == {"shipId": "12345", "destination": "OE-PM"}
+    assert mock_endpoints.calls[0].request.params == {"ship_symbol": "12345", "destination": "OE-PM"}
     assert isinstance(r, dict)
 
 # PurchaseOrders Endpoints
@@ -174,7 +174,7 @@ def test_purchaseOrders_submit_order(api: Api, mock_endpoints):
     mock_endpoints.add(responses.POST, f"{BASE_URL}my/purchase-orders",
                   json=MOCKS['purchase_order'], status=200)
     r = api.purchaseOrders.new_purchase_order("12345", "FUEL", 1)
-    assert mock_endpoints.calls[0].request.params == {"shipId": "12345", "good": "FUEL", "quantity": "1"}
+    assert mock_endpoints.calls[0].request.params == {"ship_symbol": "12345", "symbol": "FUEL", "units": "1"}
     assert isinstance(r, dict)
 
     
@@ -278,7 +278,7 @@ def test_sellOrders_submit_order(api: Api, mock_endpoints):
     mock_endpoints.add(responses.POST, f"{BASE_URL}my/sell-orders",
                   json=MOCKS['sell_order'], status=200)
     r = api.sellOrders.new_sell_order("12345", "FUEL", 1)
-    assert mock_endpoints.calls[0].request.params == {"shipId": "12345", "good": "FUEL", "quantity": "1"}
+    assert mock_endpoints.calls[0].request.params == {"ship_symbol": "12345", "symbol": "FUEL", "units": "1"}
     assert isinstance(r, dict)
 
 # Structures Endpoints
@@ -302,14 +302,14 @@ def test_strucutres_create_structure(api: Api, mock_endpoints):
 def test_strucutres_deposit_to_user_structure(api: Api, mock_endpoints):
     mock_endpoints.add(responses.POST, f"{BASE_URL}my/structures/12345/deposit", json=MOCKS['deposit_to_user_structure'], status=200)
     r = api.structures.deposit_goods("12345", "54321", "FUEL", "1")
-    assert mock_endpoints.calls[0].request.params == {"shipId": "54321", "good": "FUEL", "quantity": "1"}
+    assert mock_endpoints.calls[0].request.params == {"ship_symbol": "54321", "symbol": "FUEL", "units": "1"}
     assert isinstance(r, dict)
 
 @pytest.mark.structures
 def test_structures_transfer_to_ship(api: Api, mock_endpoints):
     mock_endpoints.add(responses.POST, f"{BASE_URL}my/structures/12345/transfer", json=MOCKS['transfer_to_ship_'], status=200)
     r = api.structures.transfer_goods("12345", "54321", "FUEL", "1")
-    assert mock_endpoints.calls[0].request.params == {"shipId": "54321", "good": "FUEL", "quantity": "1"}
+    assert mock_endpoints.calls[0].request.params == {"ship_symbol": "54321", "symbol": "FUEL", "units": "1"}
     assert isinstance(r, dict)
 
 @pytest.mark.structures
@@ -328,7 +328,7 @@ def test_structures_get_user_structures(api: Api, mock_endpoints):
 def test_strucutres_deposit_to_a_structure(api: Api, mock_endpoints):
     mock_endpoints.add(responses.POST, f"{BASE_URL}structures/12345/deposit", json=MOCKS['deposit_to_a_structure'], status=200)
     r = api.structures.deposit_goods("12345", "54321", "FUEL", "1", user_owned=False)
-    assert mock_endpoints.calls[0].request.params == {"shipId": "54321", "good": "FUEL", "quantity": "1"}
+    assert mock_endpoints.calls[0].request.params == {"ship_symbol": "54321", "symbol": "FUEL", "units": "1"}
     assert isinstance(r, dict)
 
 @pytest.mark.structures
@@ -484,7 +484,7 @@ def test_warp_jump_init():
 def test_warp_jump_attempt_jump(api: Api, mock_endpoints):
     mock_endpoints.add(responses.POST, f"{BASE_URL}my/warp-jumps", json=MOCKS['warp_jump'], status=200)
     r = api.warpjump.attempt_jump("12345")
-    assert mock_endpoints.calls[0].request.params == {"shipId": "12345"}
+    assert mock_endpoints.calls[0].request.params == {"ship_symbol": "12345"}
     assert isinstance(r, dict)
 
 #

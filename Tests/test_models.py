@@ -151,7 +151,7 @@ class TestMarketplaceMethods(unittest.TestCase):
         self.assertTrue(all(isinstance(good, Good) for good in self.marketplace.marketplace), "Not all of the goods are a Good Object")
 
     def test_get_good(self):
-        self.assertEqual(self.marketplace.get_good("FUEL").symbol, "FUEL", "Did not return the expected good object")
+        self.assertEqual(self.marketplace.get_good("FUEL").symbol, "FUEL", "Did not return the expected symbol object")
 
 class TestGoodInit(unittest.TestCase):
     def test_good_init_manual(self):
@@ -161,5 +161,5 @@ class TestGoodInit(unittest.TestCase):
                               Good, "Good model did not initiate properly")
 
     def test_good_init_json(self):
-        self.assertIsInstance(Good(**MOCKS['good']), Good, "Good model did not initiate properly")
+        self.assertIsInstance(Good(**MOCKS['symbol']), Good, "Good model did not initiate properly")
       

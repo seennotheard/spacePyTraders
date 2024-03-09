@@ -34,7 +34,7 @@ class Agent:
 class Chart:
     submitted_by: str
     submitted_on: str
-    waypoint_symbol: str | None = None  # optional
+    waypoint_symbol: str = None  # optional
 
 
 @dataclass
@@ -56,7 +56,7 @@ class Cooldown:
     ship_symbol: str
     total_seconds: int
     remaining_seconds: int
-    expiration: str | None = None  # optional
+    expiration: str = None  # optional
 
 
 @dataclass
@@ -129,8 +129,8 @@ class Market:
     exports: list[TradeGood]
     imports: list[TradeGood]
     exchange: list[TradeGood]
-    transactions: list[MarketTransaction] | None = None  # optional
-    trade_goods: list[MarketTradeGood] | None = None  # optional
+    transactions: list[MarketTransaction] = None  # optional
+    trade_goods: list[MarketTradeGood] = None  # optional
 
 
 @dataclass
@@ -159,7 +159,7 @@ class Waypoint:
     modifiers: list[WaypointModifier]
     chart: Chart
     is_under_construction: bool
-    orbits: str | None = None  # optional
+    orbits: str = None  # optional
 
 
 @dataclass
@@ -197,8 +197,8 @@ class ShipCrew:
 @dataclass
 class ShipRequirements:
     crew: int
-    power: int | None = None  # optional
-    slots: int | None = None  # optional
+    power: int = None  # optional
+    slots: int = None  # optional
 
 
 @dataclass
@@ -242,8 +242,8 @@ class ShipModule:
     name: str
     description: str
     requirements: ShipRequirements
-    capacity: int | None = None  # optional
-    range: int | None = None  # optional
+    capacity: int = None  # optional
+    range: int = None  # optional
 
 
 @dataclass
@@ -253,7 +253,7 @@ class ShipMount:
     description: str
     strength: int
     requirements: ShipRequirements
-    deposits: list[str] | None = None  # optional field, + look at this again
+    deposits: list[str] = None  # optional field, + look at this again
 
 
 @dataclass
@@ -308,11 +308,11 @@ class Ship:
     reactor: ShipReactor
     engine: ShipEngine
     mounts: list[ShipMount]
-    crew: ShipCrew | None = None  # optional fields (for scanned)
-    cooldown: Cooldown | None = None
-    modules: list[ShipModule] | None = None
-    cargo: ShipCargo | None = None
-    fuel: ShipFuel | None = None
+    crew: ShipCrew = None  # optional fields (for scanned)
+    cooldown: Cooldown = None
+    modules: list[ShipModule] = None
+    cargo: ShipCargo = None
+    fuel: ShipFuel = None
 
 
 @dataclass

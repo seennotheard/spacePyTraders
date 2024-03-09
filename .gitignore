@@ -13,6 +13,8 @@ spaceTraders.pyc
 /automation
 run.py
 config.json
+shortcut.py
+SpacePyTraders/jsonparser.py
 
 # For personal Projects
 zac.py

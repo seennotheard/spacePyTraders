@@ -1,8 +1,9 @@
-from dataclasses import dataclass, field
-import math
+from dataclasses import dataclass, field, fields
+import re
+
 
 @dataclass
-class User ():
+class User:
     """
     The basic user object. Great way to store and access a user's credits, ships and loans.
 
@@ -10,7 +11,6 @@ class User ():
         username (str): The username of the user
         credits (int): How many credits does the user have
         ships (list): A list of the ships the user owns
-        loans (list): A list of the loans the user has
 
     Returns:
         User: returns a user object
@@ -18,148 +18,368 @@ class User ():
     username: str
     credits: int
     ships: field(default_factory=list)
-    loans: field(default_factory=list)
 
-    def __post_init__(self):
-        """Handles creating a list of the respective objects if only the dictionary is given. 
-        This basically means from the get go a you could call `user.ships[0].id` and get the id of the ship back. 
-        Rather than user.ships[0]['id']
-        """
-        if all(isinstance(ship, dict) for ship in self.ships):
-            self.ships = [build_ship(ship) for ship in self.ships]
-
-        if all(isinstance(loan, dict) for loan in self.loans):
-            self.loans = [Loan(**loan) for loan in self.loans]
-
-
-def build_ship(ship_dict):
-    """Handles the creation of a ship class. The ship dict contains a 'class' key which needs to be changed for the class creation.
-    The ship may also be in transit and that needs to be handled accordingly
-
-    Args:
-        ship_dict (dict): the dict version of a ship
-
-    Returns:
-        Ship: A ship object
-    """
-    # Handle if class key is present in dictionary
-    if 'class' in ship_dict:
-        ship_dict['kind'] = ship_dict.pop('class')
-
-    if 'location' not in ship_dict:
-        ship_dict['location'] = "IN_TRANSIT"
-    return Ship(**ship_dict)
 
 @dataclass
-class Ship ():
-    id: str
-    manufacturer: str
-    kind: str
-    type: str
-    location: str
-    speed: int
-    plating: int
-    weapons: int
-    maxCargo: int
-    spaceAvailable: int
-    cargo: field(default_factory=list)
-    flightPlanId: str = None
-    x: int = None
-    y: int = None
+class Agent:
+    account_id: str
+    symbol: str
+    headquarters: str
+    credits: int
+    starting_faction: int
+    ship_count: int
 
-    def __post_init__(self):
-        """Handles creating a list of Cargo object in the ship
-        """
-        if all(isinstance(c, dict) for c in self.cargo):
-            self.cargo = [Cargo(**c) for c in self.cargo]
-    
-    def calculate_fuel_required(self, dest_dist):
-        calc_fuel = lambda d, p: round((d / 4) + p + 2)
-        penalties = {
-            "MK-I": 2,
-            "MK-II": 3,
-            "MK-III": 4
-        }
-        penalty = penalties[self.kind]
-        return calc_fuel(dest_dist, penalty)
-
-    def calculate_dist_from_ship(self, loc):
-        return round(math.sqrt(math.pow((loc.x - self.x),2) + math.pow((loc.y - self.y),2)))
 
 @dataclass
-class Cargo ():
-    good: str
-    quantity: int
-    totalVolume: int
+class Chart:
+    submitted_by: str
+    submitted_on: str
+    waypoint_symbol: str | None = None  # optional
+
 
 @dataclass
-class Loan ():
-    id: str 
-    due: str
-    repaymentAmount: int
-    status: str
-    type: str
-    
+class ConstructionMaterial:
+    tradeSymbol: str
+    required: int
+    fulfilled: int
+
+
 @dataclass
-class Location ():
+class Construction:
+    symbol: str
+    materials: list[ConstructionMaterial]
+    isComplete: bool
+
+
+@dataclass
+class Cooldown:
+    ship_symbol: str
+    total_seconds: int
+    remaining_seconds: int
+    expiration: str | None = None  # optional
+
+
+@dataclass
+class ExtractionYield:
+    symbol: str
+    units: int
+
+
+@dataclass
+class FactionSymbol:
+    symbol: str
+
+
+@dataclass
+class FactionTrait:
+    symbol: str
+    name: str
+    description: str
+
+
+@dataclass
+class Faction:
+    symbol: str
+    name: str
+    description: str
+    headquarters: str
+    traits: list[FactionTrait]  # look at this again, can we just do a list[str]?
+    is_recruiting: bool
+
+
+@dataclass
+class JumpGate:
+    symbol: str
+    connections: list[str]
+
+
+@dataclass
+class TradeGood:  # WaypointModifier, WaypointTrait, and TradeGood share the same structure
+    symbol: str
+    name: str
+    description: str
+
+
+@dataclass
+class MarketTradeGood:
     symbol: str
     type: str
+    trade_volume: int
+    supply: str
+    activity: str
+    purchase_price: int
+    sell_price: int
+
+
+@dataclass
+class MarketTransaction:
+    waypoint_symbol: str
+    ship_symbol: str
+    trade_symbol: str
+    type: str
+    units: int
+    price_per_unit: int
+    total_price: int
+    timestamp: str
+
+
+@dataclass
+class Market:
+    symbol: str
+    exports: list[TradeGood]
+    imports: list[TradeGood]
+    exchange: list[TradeGood]
+    transactions: list[MarketTransaction] | None = None  # optional
+    trade_goods: list[MarketTradeGood] | None = None  # optional
+
+
+@dataclass
+class WaypointModifier:  # WaypointModifier, WaypointTrait, and TradeGood share the same structure
+    symbol: str
     name: str
+    description: str
+
+
+@dataclass
+class WaypointTrait:  # WaypointModifier, WaypointTrait, and TradeGood share the same structure
+    symbol: str
+    name: str
+    description: str
+
+
+@dataclass
+class Waypoint:
+    symbol: str
+    type: str
     x: int
     y: int
-    allowsConstruction: bool
-    structures: field(default_factory=list)
-    messages: list = None
+    orbitals: list[str]
+    faction: FactionSymbol
+    traits: list[WaypointTrait]
+    modifiers: list[WaypointModifier]
+    chart: Chart
+    is_under_construction: bool
+    orbits: str | None = None  # optional
+
 
 @dataclass
-class Marketplace (Location):
-    marketplace: list = field(default_factory=list)
+class Meta:  # for pagination
+    total: int
+    page: int
+    limit: int
 
-    def __post_init__(self):
-        """Handles creating a list of Location object in the system
-        """
-        if all(isinstance(good, dict) for good in self.marketplace):
-            self.marketplace = [Good(**good) for good in self.marketplace]
-
-    def get_good(self, symbol):
-        """Returns a Good object for the symbol provided
-
-        Args:
-            symbol (str): Symbol of the symbol Eg: "FUEL"
-
-        Returns:
-            Good: Good object for the symbol given
-        """
-        return next(good for good in self.marketplace if good.symbol == symbol)
 
 @dataclass
-class Good ():
+class ShipCargoItem:
     symbol: str
-    volumePerUnit: int
-    pricePerUnit: int
-    spread: int
-    purchasePricePerUnit: int
-    sellPricePerUnit: int
-    quantityAvailable: int
+    name: str
+    description: str
+    units: int
+
 
 @dataclass
-class System ():
-    locations: field(default_factory=list)
+class ShipCargo:
+    capacity: int
+    units: int
+    inventory: list[ShipCargoItem]
 
-    def __post_init__(self):
-        """Handles creating a list of Location object in the system
-        """
-        if all(isinstance(loc, dict) for loc in self.locations):
-            self.locations = [Location(**loc) for loc in self.locations]
 
-    def get_location(self, symbol):
-        """Returns a Location object for the symbol provided
+@dataclass
+class ShipCrew:
+    current: int
+    required: int
+    capacity: int
+    rotation: str
+    morale: int
+    wages: int
 
-        Args:
-            symbol (str): Symbol of the location Eg: "OE-PM"
 
-        Returns:
-            Location: Location object for the symbol given
-        """
-        return next(loc for loc in self.locations if loc.symbol == symbol)
+@dataclass
+class ShipRequirements:
+    crew: int
+    power: int | None = None  # optional
+    slots: int | None = None  # optional
 
+
+@dataclass
+class ShipEngine:
+    symbol: str
+    name: str
+    description: str
+    condition: int
+    speed: int
+    requirements: ShipRequirements
+
+
+@dataclass
+class ShipFrame:
+    symbol: str
+    name: str
+    description: str
+    condition: int
+    module_slots: int
+    mounting_points: int
+    fuel_capacity: int
+    requirements: ShipRequirements
+
+
+@dataclass
+class ShipFuelConsumed:
+    amount: int
+    timestamp: str
+
+
+@dataclass
+class ShipFuel:
+    current: int
+    capacity: int
+    consumed: ShipFuelConsumed  # optional
+
+
+@dataclass
+class ShipModule:
+    symbol: str
+    name: str
+    description: str
+    requirements: ShipRequirements
+    capacity: int | None = None  # optional
+    range: int | None = None  # optional
+
+
+@dataclass
+class ShipMount:
+    symbol: str
+    name: str
+    description: str
+    strength: int
+    requirements: ShipRequirements
+    deposits: list[str] | None = None  # optional field, + look at this again
+
+
+@dataclass
+class ShipNavRouteWaypoint:
+    symbol: str
+    type: str
+    system_symbol: str
+    x: int
+    y: int
+
+
+@dataclass
+class ShipNavRoute:
+    destination: ShipNavRouteWaypoint
+    origin: ShipNavRouteWaypoint
+    departure_time: str
+    arrival: str
+
+
+@dataclass
+class ShipNav:
+    system_symbol: str
+    waypoint_symbol: str
+    route: ShipNavRoute
+    status: str
+    flight_mode: str
+
+
+@dataclass
+class ShipReactor:
+    symbol: str
+    name: str
+    description: str
+    condition: int
+    power_output: int
+    requirements: ShipRequirements
+
+
+@dataclass
+class ShipRegistration:
+    name: str
+    faction_symbol: str
+    role: str
+
+
+@dataclass
+class Ship:
+    symbol: str
+    registration: ShipRegistration
+    nav: ShipNav
+    frame: ShipFrame
+    reactor: ShipReactor
+    engine: ShipEngine
+    mounts: list[ShipMount]
+    crew: ShipCrew | None = None  # optional fields (for scanned)
+    cooldown: Cooldown | None = None
+    modules: list[ShipModule] | None = None
+    cargo: ShipCargo | None = None
+    fuel: ShipFuel | None = None
+
+
+@dataclass
+class SurveyDeposit:
+    symbol: str
+
+
+@dataclass
+class Survey:
+    signature: str
+    symbol: str
+    deposits: list[SurveyDeposit]
+    expiration: str
+    size: str
+
+
+@dataclass
+class SystemWaypoint:
+    symbol: str
+    type: str
+    x: int
+    y: int
+    orbitals: list[str]
+    orbits: str
+
+
+@dataclass
+class System:
+    symbol: str
+    sector_symbol: str
+    type: str
+    x: int
+    y: int
+    waypoints: list[SystemWaypoint]
+    factions: list[FactionSymbol]
+
+
+class_dict = {}
+list_dict = {}
+global_objects = globals()
+classes_in_global_namespace = {name: obj for name, obj in global_objects.items() if isinstance(obj, type)}
+for name, obj in classes_in_global_namespace.items():
+    class_dict[name] = obj
+    list_dict[list[obj]] = obj
+
+
+def parser(data, model):
+    if model in list_dict:  # if we fit things into a list
+        result = []
+        for i in data:
+            result.append(parser(data=i, model=list_dict[model]))
+        return result;
+    else:
+        class_info = {}  # dict passed to constructor
+        for key, value in data.items():
+            for i in fields(model):
+                if i.name == to_snake(key):  # dont forget to deal w camel case whatevs
+                    if i.type in list_dict:  # if type is list of a models class
+                        class_info[i.name] = parser(data=value, model=i.type)
+                    elif i.type in class_dict.values():  # elif type is a models class
+                        class_info[i.name] = parser(data=value, model=i.type)
+                    else:  # primitive
+                        class_info[i.name] = value
+                    break
+
+        return model(**class_info)
+
+
+def to_snake(name):
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()

@@ -52,6 +52,39 @@ class Construction:
 
 
 @dataclass
+class ContractDeliverGood:
+    trade_symbol: str
+    destination_symbol: str
+    units_required: int
+    units_fulfilled: int
+
+
+@dataclass
+class ContractPayment:
+    on_accepted: int
+    on_fulfilled: int
+
+
+@dataclass
+class ContractTerms:
+    deadline: str
+    payment: ContractPayment
+    deliver: ContractDeliverGood
+
+
+@dataclass
+class Contract:
+    id: str
+    faction_symbol: str
+    type: str
+    terms: list[ContractTerms]
+    accepted: bool
+    fulfilled: bool
+    expiration: str  # deprecated
+    deadline_to_accept: str
+
+
+@dataclass
 class Cooldown:
     ship_symbol: str
     total_seconds: int
@@ -130,7 +163,7 @@ class Market:
     imports: list[TradeGood]
     exchange: list[TradeGood]
     transactions: list[MarketTransaction] = None  # optional
-    trade_goods: list[MarketTradeGood] = None  # optional
+    trade_goods: list[MarketTradeGood] = None
 
 
 @dataclass
@@ -198,7 +231,7 @@ class ShipCrew:
 class ShipRequirements:
     crew: int
     power: int = None  # optional
-    slots: int = None  # optional
+    slots: int = None
 
 
 @dataclass
@@ -243,7 +276,7 @@ class ShipModule:
     description: str
     requirements: ShipRequirements
     capacity: int = None  # optional
-    range: int = None  # optional
+    range: int = None
 
 
 @dataclass
@@ -336,7 +369,7 @@ class SystemWaypoint:
     x: int
     y: int
     orbitals: list[str]
-    orbits: str
+    orbits: str = None  # optional
 
 
 @dataclass
@@ -381,5 +414,36 @@ def parser(data, model):
         return model(**class_info)
 
 
+def unpack(k):
+    if type(k) is list:  # if we fit things into a list
+        result = []
+        for i in k:
+            result.append(unpack(i))
+        return result;
+    res = {}
+    if type(k) is dict:
+        for attr, value in k.items():
+            if type(value) is list or type(value) in class_dict.values():  # type is class or list of class
+                value = unpack(value)
+            res[to_lower_camel_case(attr)] = value
+        return res
+    for attr, value in k.__dict__.items():
+        if type(value) is list or type(value) in class_dict.values():  # type is class or list of class
+            value = unpack(value)
+        res[to_lower_camel_case(attr)] = value
+    return res
+
+
 def to_snake(name):
     return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+
+
+def to_camel_case(snake_str):
+    return "".join(x.capitalize() for x in snake_str.lower().split("_"))
+
+
+def to_lower_camel_case(snake_str):
+    # We capitalize the first letter of each component except the first one
+    # with the 'capitalize' method and join them together.
+    camel_string = to_camel_case(snake_str)
+    return snake_str[0].lower() + camel_string[1:]

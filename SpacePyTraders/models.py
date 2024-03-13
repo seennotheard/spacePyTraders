@@ -22,24 +22,24 @@ class User:
 
 @dataclass
 class Agent:
-    account_id: str
     symbol: str
     headquarters: str
     credits: int
     starting_faction: int
     ship_count: int
+    account_id: str = None  # optional
 
 
 @dataclass
 class Chart:
-    submitted_by: str
-    submitted_on: str
     waypoint_symbol: str = None  # optional
+    submitted_by: str = None
+    submitted_on: str = None
 
 
 @dataclass
 class ConstructionMaterial:
-    tradeSymbol: str
+    trade_symbol: str
     required: int
     fulfilled: int
 
@@ -48,7 +48,7 @@ class ConstructionMaterial:
 class Construction:
     symbol: str
     materials: list[ConstructionMaterial]
-    isComplete: bool
+    is_complete: bool
 
 
 @dataclass
@@ -69,7 +69,7 @@ class ContractPayment:
 class ContractTerms:
     deadline: str
     payment: ContractPayment
-    deliver: ContractDeliverGood
+    deliver: list[ContractDeliverGood]
 
 
 @dataclass
@@ -77,7 +77,7 @@ class Contract:
     id: str
     faction_symbol: str
     type: str
-    terms: list[ContractTerms]
+    terms: ContractTerms
     accepted: bool
     fulfilled: bool
     expiration: str  # deprecated
@@ -93,7 +93,7 @@ class Cooldown:
 
 
 @dataclass
-class ExtractionYield:
+class ExtractionYield:  # No Extraction schema due to yield being a keyword
     symbol: str
     units: int
 
@@ -139,9 +139,9 @@ class MarketTradeGood:
     type: str
     trade_volume: int
     supply: str
-    activity: str
     purchase_price: int
     sell_price: int
+    activity: str = None  # optional
 
 
 @dataclass
@@ -201,6 +201,23 @@ class Meta:  # for pagination
     page: int
     limit: int
 
+@dataclass
+class RepairTransaction:
+    waypoint_symbol: str
+    ship_symbol: str
+    total_price: int
+    timestamp: str
+
+
+@dataclass
+class ScannedSystem:
+    symbol: str
+    type: str
+    x: int
+    y: int
+    distance: int
+    sectorSymbol: str = None  # optional
+
 
 @dataclass
 class ShipCargoItem:
@@ -208,6 +225,14 @@ class ShipCargoItem:
     name: str
     description: str
     units: int
+
+
+@dataclass
+class ShipConditionEvent:
+    symbol: str
+    component: str
+    name: str
+    description: str
 
 
 @dataclass
@@ -219,12 +244,18 @@ class ShipCargo:
 
 @dataclass
 class ShipCrew:
-    current: int
     required: int
     capacity: int
-    rotation: str
-    morale: int
-    wages: int
+    current: int = None
+    rotation: str = None
+    morale: int = None
+    wages: int = None
+
+
+@dataclass
+class ShipRefineGood:
+    trade_symbol: str
+    units: int
 
 
 @dataclass
@@ -239,7 +270,8 @@ class ShipEngine:
     symbol: str
     name: str
     description: str
-    condition: int
+    condition: float
+    integrity: float
     speed: int
     requirements: ShipRequirements
 
@@ -249,7 +281,8 @@ class ShipFrame:
     symbol: str
     name: str
     description: str
-    condition: int
+    condition: float  # is this optional?
+    integrity: float
     module_slots: int
     mounting_points: int
     fuel_capacity: int
@@ -320,7 +353,8 @@ class ShipReactor:
     symbol: str
     name: str
     description: str
-    condition: int
+    condition: float
+    integrity: float
     power_output: int
     requirements: ShipRequirements
 
@@ -346,6 +380,46 @@ class Ship:
     modules: list[ShipModule] = None
     cargo: ShipCargo = None
     fuel: ShipFuel = None
+
+
+@dataclass
+class ShipTypes:
+    type: str
+
+
+@dataclass
+class ShipyardTransaction:
+    waypoint_symbol: str
+    ship_symbol: str
+    ship_type: str
+    price: int
+    agent_symbol: str
+    timestamp: str
+
+
+@dataclass
+class ShipyardShip:
+    type: str
+    name: str
+    description: str
+    supply: str
+    activity: str
+    frame: ShipFrame
+    reactor: ShipReactor
+    engine: ShipEngine
+    crew: ShipCrew
+    purchase_price: int = None
+    mounts: list[ShipMount] = None
+    modules: list[ShipModule] = None
+
+
+@dataclass
+class Shipyard:
+    symbol: str
+    ship_types: list[ShipTypes]
+    modifications_fee: int
+    transactions: list[ShipyardTransaction] = None  # optional
+    ships: list[ShipyardShip] = None
 
 
 @dataclass
@@ -397,12 +471,12 @@ def parser(data, model):
         result = []
         for i in data:
             result.append(parser(data=i, model=list_dict[model]))
-        return result;
+        return result
     else:
         class_info = {}  # dict passed to constructor
         for key, value in data.items():
             for i in fields(model):
-                if i.name == to_snake(key):  # dont forget to deal w camel case whatevs
+                if i.name == to_snake(key):
                     if i.type in list_dict:  # if type is list of a models class
                         class_info[i.name] = parser(data=value, model=i.type)
                     elif i.type in class_dict.values():  # elif type is a models class
@@ -419,7 +493,7 @@ def unpack(k):
         result = []
         for i in k:
             result.append(unpack(i))
-        return result;
+        return result
     res = {}
     if type(k) is dict:
         for attr, value in k.items():

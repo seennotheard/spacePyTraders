@@ -2,7 +2,7 @@ from asyncio.format_helpers import extract_stack
 import requests
 import logging
 import time
-from SpacePyTraders import models
+from SpacePyTradersV2 import models
 from dataclasses import dataclass, field
 import warnings
 from ratelimit import limits, sleep_and_retry

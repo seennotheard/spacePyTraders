@@ -22,7 +22,7 @@ setup(
     py_modules=["client"],
     packages=["SpacePyTradersV2"],
     install_requires=[
-        "requests ~= 2.25.1"
+        "requests ~= 2.25.1",
         "ratelimit==2.2.1"
     ],
     classifiers = [

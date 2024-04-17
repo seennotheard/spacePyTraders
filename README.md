@@ -34,5 +34,5 @@ api = client.Api(USERNAME,TOKEN)
 print(api.account.get_agent())
 
 >>> 
-"Agent(symbol='ELECTRICFALCON', headquarters='X1-HM65-A1', credits=25772, starting_faction='COSMIC', ship_count=7, account_id='clutsmxw721xks60cmuy02lc8')"
+"Agent(symbol='JoeBloggs', headquarters='X1-HM65-A1', credits=25772, starting_faction='COSMIC', ship_count=7, account_id='asdfasdfasdf')"
 ```

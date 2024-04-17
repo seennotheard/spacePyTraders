@@ -8,7 +8,15 @@ Space Traders is a great way to learn a practice coding. I highly recommend havi
 
 ## Install
 
-`pip install SpacePyTraders`
+`git clone https://github.com/seennotheard/spacePyTradersV2.git`
+
+Navigate terminal to spacePyTradersV2 folder containing `setup.py` e.g.
+
+`cd spacePyTradersV2`
+
+Install package with pip
+
+`pip install .`
 
 ## Getting Started
 The first installment of this library provides a nice way to use Python and interact with the API without needed to code all the request calls. 
@@ -16,22 +24,15 @@ The first installment of this library provides a nice way to use Python and inte
 Using the `Api` class provided you can access all the currently possible endpoints of the API. The structure of the classes are organised the same as the Space Traders API. So if you're not sure what class to look under check the docs [here](https://spacetraders.readthedocs.io/en/latest/) or the Space Trader's API [here](https://api.spacetraders.io/).
 
 ```python
-from SpacePyTraders import client
+from SpacePyTradersV2 import client
 
 USERNAME = "YOUR USERNAME"
 TOKEN = "YOUR TOKEN"
 
 api = client.Api(USERNAME,TOKEN)
 
-print(api.account.info())
+print(api.account.get_agent())
 
 >>> 
-{
-    "user": {
-        "username": "JimHawkins",
-        "credits": 0,
-        "ships": [],
-        "loans": []
-    }
-}
+"Agent(symbol='JoeBloggs', headquarters='X1-HM65-A1', credits=25772, starting_faction='COSMIC', ship_count=7, account_id='asdfasdfasdf')"
 ```

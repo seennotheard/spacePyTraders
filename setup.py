@@ -11,18 +11,19 @@ with open('README.md','r') as fh:
 
 # This call to setup() does all the work
 setup(
-    name="SpacePyTraders",
-    version="0.0.6",
+    name="SpacePyTradersV2",
+    version="0.0.7",
     description="Access the Space Traders API with Python",
     # long_description=README,
     # long_description_content_type="text/markdown",
-    url="https://github.com/ZacHooper/spacePyTraders",
-    author="Zac Hooper",
+    url="https://github.com/seennotheard/spacePyTradersV2",
+    author="Zac Hooper (original v1) /Seen Not Heard",
     author_email="zac.g.hooper@gmail.com",
     py_modules=["client"],
-    packages=["SpacePyTraders"],
+    packages=["SpacePyTradersV2"],
     install_requires=[
         "requests ~= 2.25.1"
+        "ratelimit==2.2.1"
     ],
     classifiers = [
         "Programming Language :: Python :: 3",

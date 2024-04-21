@@ -1186,7 +1186,7 @@ class Systems(Client):
         warning_log = f"Unable to get the locations in the system: {system_symbol}"
         logging.info(f"Getting the locations in system: {system_symbol}")
         querystring = {"shipSymbol": ship_symbol, "tradeSymbol": trade_symbol, "units": units}
-        res = self.generic_api_call("GET", endpoint, params=querystring, token=self.token, warning_log=warning_log,
+        res = self.generic_api_call("POST", endpoint, params=querystring, token=self.token, warning_log=warning_log,
                                     raw_res=raw_res, throttle_time=throttle_time)
         ret = {"construction": models.parser(res['data']['construction'], models.Construction),
                "cargo": models.parser(res['data']['cargo'], models.ShipCargo)}
